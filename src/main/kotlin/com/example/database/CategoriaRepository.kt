@@ -7,17 +7,26 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object Categorias : Table() {
     val id = integer("id").autoIncrement()
-    val image = varchar("image", 200)
+    val image = varchar("image", 300)
     val link = varchar("link", 100)
     val title = varchar("title", 100)
     override val primaryKey = PrimaryKey(id)
 }
 
+object CategoriasItem : Table() {
+    val id = integer("id").autoIncrement()
+    val image = varchar("imageItem", 300)
+    val link = varchar("linkItem", 100)
+    val title = varchar("titleItem", 100)
+    override val primaryKey = PrimaryKey(id)
+}
+
 class CategoriaRepository {
     fun init() {
-        Database.connect("jdbc:sqlite:categorias.db", "org.sqlite.JDBC")
+        Database.connect("jdbc:sqlite:coc.db", "org.sqlite.JDBC")
         transaction {
             SchemaUtils.create(Categorias)
+            SchemaUtils.create(CategoriasItem)
         }
     }
 
@@ -30,7 +39,27 @@ class CategoriaRepository {
             }
         }
     }
+    fun adicionarCategoriaItem(image: String, link: String, title: String) {
+        transaction {
+            CategoriasItem.insert {
+                it[CategoriasItem.image] = image
+                it[CategoriasItem.link] = link
+                it[CategoriasItem.title] = title
+            }
+        }
+    }
 
+    fun obterCategoriasItem(): List<Categoria> {
+        return transaction {
+            CategoriasItem.selectAll().map {
+                Categoria(
+                    image = it[CategoriasItem.image],
+                    link = it[CategoriasItem.link],
+                    title = it[CategoriasItem.title]
+                )
+            }
+        }
+    }
     fun obterCategorias(): List<Categoria> {
         return transaction {
             Categorias.selectAll().map {

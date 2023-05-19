@@ -12,7 +12,7 @@ import org.jsoup.Jsoup
 import java.io.IOException
 import java.text.DateFormat
 
-fun Application.categories() {
+fun Application.categories(categoriaRepository: CategoriaRepository) {
     install(ContentNegotiation) {
         gson {
             setDateFormat(DateFormat.LONG)
@@ -20,64 +20,30 @@ fun Application.categories() {
         }
     }
 
-    val urlHome = "https://clashofclans.fandom.com/wiki/Clash_of_Clans_Wiki"
-    val imagesDataSet= mutableSetOf<String>()
-    val linksDataSet= mutableSetOf<String>()
-
     routing {
         get("/") {
             call.respond("Welcome to CoC API")
         }
-        get("/categories/{item}"){
-            if(call.parameters["item"]=="admin"){
-                call.respond("é admn")
-            }
-        }
-
         get("/teste"){
-            call.respond(CategoriaRepository().obterCategorias())
+            val repoCatItens = categoriaRepository.obterCategoriasItem()
+            call.respond(repoCatItens)
         }
 
-        get("/categories") {
-
-            val home = Jsoup.connect(urlHome).get()
-            try {
-                val urlHome = home.body().getElementsByClass("floatnone")
-                val urlToLinks = home.body().getElementsByClass("TitleBlock-Link")
-                val titleDataSet = home.body().getElementsByClass("TitleBlock-Title").eachText()
-
-                for (i in urlToLinks) {
-                    val link = i.getElementsByAttribute("href").attr("href")
-                    linksDataSet.add(link.toString())
-                }
-
-                for (i in urlHome) {
-                    val imageLink = i.getElementsByTag("img")[0].getElementsByAttribute("data-src").attr("data-src")
-                    imagesDataSet.add(imageLink.toString())
-                }
-                imagesDataSet.remove("")
-
-                val categoriasList = mutableListOf<Categoria>()
-                for(i in 0 until titleDataSet.size){
-                    categoriasList.add(Categoria(
-                        image = imagesDataSet.elementAt(i),
-                        link = linksDataSet.elementAt(i),
-                        title = titleDataSet.elementAt(i)
-                    ))
-                }
-
-                val categorias = Categorias(categoriasList)
-               // println(categorias.toString())
-                for(i in categorias.categorias){
-                    CategoriaRepository().adicionarCategoria(i.image,i.link,i.title)
-                }
-
-                call.respond(categorias)
-
-            }catch (e: IOException){
-                val message = e.message ?: "Error desconhecido"
-                call.respond(message)
+        get("/categories/{item}"){
+            val repoCatItens = categoriaRepository.obterCategoriasItem()
+            val titlePath = call.parameters["item"]
+            val categoria = repoCatItens.find{it.title==titlePath}
+            println(repoCatItens.toString())
+            println("o titulo éeeeeeee"+titlePath)
+            println(categoria)
+            if(categoria !=null){
+                call.respond(categoria)
+            }else{
+                call.respond("Item não encontrada")
             }
+        }
+        get("/categories"){
+            call.respond(categoriaRepository.obterCategorias())
         }
     }
 }
