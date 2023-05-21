@@ -1,61 +1,109 @@
 package com.example.network
 
 import com.example.database.CategoriaRepository
+import com.example.model.Building
 import com.example.model.Categoria
-import com.example.model.Categorias
 import org.jsoup.Jsoup
 import java.io.IOException
 
-
 class GetCategoriasRequest(private val categoriaRepository: CategoriaRepository){
     val urlHome = "https://clashofclans.fandom.com/wiki/Clash_of_Clans_Wiki"
-    val imagesDataSet= mutableSetOf<String>()
-    val linksDataSet= mutableSetOf<String>()
-
-
-    val titles= mutableSetOf<String>()
-
-    val home = Jsoup.connect(urlHome).get()
-
-
-    //categoriaItem
-    val baseUrl = "https://clashofclans.fandom.com"
-
 
     fun execute(){
         try {
-            val urlHome = home.body().getElementsByClass("floatnone")
-            val urlToLinks = home.body().getElementsByClass("TitleBlock-Link")
-            val titleDataSet = home.body().getElementsByClass("TitleBlock-Title").eachText()
+            val home = Jsoup.connect(urlHome).get()
+            //FOR HOME PAGE OF WIKI
+            //Categorie Title
+            val listLaneBanner =home.body().getElementsByClass("LaneBanner")
+            val categoriesTitles = listLaneBanner.eachText()
+            categoriesTitles.removeAt(0)//The first one is about clash blog
 
-            for (i in urlToLinks) {
-                val link = i.getElementsByAttribute("href").attr("href")
-                linksDataSet.add(link.toString())
+            //For url of images
+            var sizeOfAll = 0
+
+            //3
+           val listOftables =home.body().getElementsByClass("lcs-container")[0].getElementsByTag("table")
+           val categorias = listOftables.subList(0,4)
+
+            //for images
+            val listOfImagesDataSet = mutableListOf<List<String>>()
+            categorias.forEach{
+                val imagesDataSet= mutableSetOf<String>()
+                it.getElementsByClass("floatnone").forEach {
+                    imagesDataSet.add(it.getElementsByTag("img")[0].getElementsByAttribute("data-src").attr("data-src"))
+                }
+                listOfImagesDataSet.add(imagesDataSet.toList())
+            }
+            listOfImagesDataSet.removeAt(listOfImagesDataSet.size-1)
+
+            //for links
+            val listOfLinksDataSet = mutableListOf<List<String>>()
+            categorias.forEach{
+                val linksDataSet= mutableSetOf<String>()
+                it.getElementsByClass("TitleBlock-Link").forEach {
+                    linksDataSet.add(it.getElementsByAttribute("href").attr("href"))
+                }
+                listOfLinksDataSet.add(linksDataSet.toList())
+            }
+            listOfLinksDataSet.removeAt(listOfLinksDataSet.size-1)
+
+            //for titles
+            val listOfTitleDataSet = mutableListOf<List<String>>()
+            categorias.forEach {
+                val titleDataSet = mutableListOf<String>()
+                 it.select(".TitleBlock-Title").forEach {
+                    titleDataSet.add(it.text())
+                     sizeOfAll++
+                }
+                listOfTitleDataSet.add(titleDataSet)
+            }
+            listOfTitleDataSet.removeAt(listOfTitleDataSet.size-1)
+
+//            println(categoriesTitles)
+//            println(listOfLinksDataSet)
+//            println(listOfImagesDataSet)
+//            println(listOfTitleDataSet)
+
+            // Criando a lista final de Categoria com as Building correspondentes
+            val mergedList = mutableListOf<Categoria>()
+
+            val minSize = minOf(categoriesTitles.size, listOfLinksDataSet.size, listOfImagesDataSet.size, listOfTitleDataSet.size)
+
+            for (i in 0 until minSize) {
+                val categoryTitle = categoriesTitles[i]
+                val buildingList = mutableListOf<Building>()
+
+                val linkList = listOfLinksDataSet[i]
+                val imageList = listOfImagesDataSet[i]
+                val titleList = listOfTitleDataSet[i]
+
+                val minBuildingSize = minOf(linkList.size, imageList.size, titleList.size)
+
+                for (j in 0 until minBuildingSize) {
+                    val parentCategory = categoryTitle
+                    val buildingTitle = titleList[j]
+                    val buildingImage = imageList[j]
+                    val buildingLink = linkList[j]
+
+                    val building = Building(parentCategory, buildingTitle, buildingImage, buildingLink)
+                    buildingList.add(building)
+                }
+
+                val category = Categoria(categoryTitle, buildingList)
+                mergedList.add(category)
             }
 
-            for (i in urlHome) {
-                val imageLink = i.getElementsByTag("img")[0].getElementsByAttribute("data-src").attr("data-src")
-                imagesDataSet.add(imageLink.toString())
-            }
-            imagesDataSet.remove("")
-
-            val categoriasList = mutableListOf<Categoria>()
-            for(i in 0 until 3){
-                categoriasList.add(Categoria(
-                    image = imagesDataSet.elementAt(i),
-                    link = linksDataSet.elementAt(i),
-                    title = titleDataSet.elementAt(i)
-                ))
+            //Adicionar no repositorio todos as buildings
+            if(categoriaRepository.obterBuildings().isEmpty()){
+                mergedList.forEach { cat->
+                    cat.buildings.forEach { building->
+                        categoriaRepository.adicionarBuilding(building)
+                    }
+                }
+            }else{
             }
 
-            //adicionando categorias no repository
-            val categories = Categorias(categoriasList)
-            for(i in 0 until 3){
-                val j = categories.categorias[i]
-                categoriaRepository.adicionarCategoria(j.image,j.link,j.title)
-            }
-
-            GetCategoriasItemRequest(categoriaRepository).execute()
+//            GetCategoriasItemRequest(categoriaRepository).execute()
 
         } catch (e: IOException){
             val message = e.message ?: "Error desconhecido"

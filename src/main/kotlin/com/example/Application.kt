@@ -14,7 +14,7 @@ fun main() {
     val request = GetCategoriasRequest(categoriasRepository)
     request.execute()
 
-    embeddedServer(Netty, port = 8080, host="localhost") {
+    embeddedServer(Netty, port = 5555, host="0.0.0.0") {
         categories(categoriasRepository)
     }.start(wait = true)
 }

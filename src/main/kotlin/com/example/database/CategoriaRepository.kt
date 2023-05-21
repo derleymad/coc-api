@@ -1,22 +1,34 @@
 package com.example.database
-import com.example.model.Categoria
+import com.example.database.BuildingEntity.autoIncrement
+import com.example.database.BuildingItemEntity.autoIncrement
+import com.example.model.Building
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
 //data class CategoriaFromDb(val id: Int, val image: String, val link: String, val title: String)
 
-object Categorias : Table() {
+object BuildingEntity: Table() {
     val id = integer("id").autoIncrement()
-    val image = varchar("image", 300)
+    val parent = varchar("parent",100)
     val link = varchar("link", 100)
+    val image = varchar("image", 300)
     val title = varchar("title", 100)
     override val primaryKey = PrimaryKey(id)
 }
 
-object CategoriasItem : Table() {
+object BuildingItemEntity : Table(){
     val id = integer("id").autoIncrement()
+    val parent = varchar("parentBuildingItem",100)
+    val linkBuildingItem = varchar("linkBuildingItem", 100)
+    val image = varchar("imageBuildingItem", 300)
+    val title = varchar("titleBuildingItem", 100)
+    override val primaryKey = PrimaryKey(id)
+}
+object ItemEntity : Table(){
+    val id = integer("id").autoIncrement()
+    val parent = varchar("parentItem",100)
+    val linkItem = varchar("linkItem", 100)
     val image = varchar("imageItem", 300)
-    val link = varchar("linkItem", 100)
     val title = varchar("titleItem", 100)
     override val primaryKey = PrimaryKey(id)
 }
@@ -25,48 +37,45 @@ class CategoriaRepository {
     fun init() {
         Database.connect("jdbc:sqlite:coc.db", "org.sqlite.JDBC")
         transaction {
-            SchemaUtils.create(Categorias)
-            SchemaUtils.create(CategoriasItem)
+            SchemaUtils.create(BuildingEntity)
+            SchemaUtils.create(BuildingItemEntity)
+            SchemaUtils.create(ItemEntity)
         }
     }
 
-    fun adicionarCategoria(image: String, link: String, title: String) {
+    fun adicionarBuilding(building: Building) {
         transaction {
-            Categorias.insert {
-                it[Categorias.image] = image
-                it[Categorias.link] = link
-                it[Categorias.title] = title
+            BuildingEntity.insert {
+                it[parent] = building.parent
+                it[image] = building.image
+                it[link] = building.link
+                it[title] = building.title
             }
         }
     }
-    fun adicionarCategoriaItem(image: String, link: String, title: String) {
-        transaction {
-            CategoriasItem.insert {
-                it[CategoriasItem.image] = image
-                it[CategoriasItem.link] = link
-                it[CategoriasItem.title] = title
-            }
-        }
-    }
-
-    fun obterCategoriasItem(): List<Categoria> {
+    fun obterBuildings(): List<Building> {
         return transaction {
-            CategoriasItem.selectAll().map {
-                Categoria(
-                    image = it[CategoriasItem.image],
-                    link = it[CategoriasItem.link],
-                    title = it[CategoriasItem.title]
+            BuildingEntity.selectAll().map {
+                Building(
+                    parent = it[BuildingEntity.parent],
+                    image = it[BuildingEntity.image],
+                    link = it[BuildingEntity.link],
+                    title = it[BuildingEntity.title]
                 )
             }
         }
     }
-    fun obterCategorias(): List<Categoria> {
+
+    fun getBuildingsByParent(parent: String): List<Building> {
+        // Inicie uma transação
         return transaction {
-            Categorias.selectAll().map {
-                Categoria(
-                    image = it[Categorias.image],
-                    link = it[Categorias.link],
-                    title = it[Categorias.title]
+            // Realize a consulta
+            BuildingEntity.select { BuildingEntity.parent eq parent }.map {
+                Building(
+                    parent = it[BuildingEntity.parent],
+                    title = it[BuildingEntity.title],
+                    image = it[BuildingEntity.image],
+                    link = it[BuildingEntity.link]
                 )
             }
         }
