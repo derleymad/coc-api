@@ -19,16 +19,7 @@ fun Application.categories(categoriaRepository: CategoriaRepository) {
 
     routing {
         get("/") {
-            call.respondText("<!doctype html>\n" +
-                    "<html>\n" +
-                    "  <head>\n" +
-                    "    <title>CoC API</title>\n" +
-                    "  </head>\n" +
-                    "  <body>\n" +
-                    "    <p>Welcome to<strong>CoC API</strong><br> routes, paths, and API documentation will be added soon on  <strong>Github Project Page</strong></p>\n" +
-                    "  </body>\n" +
-                    "</html>",contentType = ContentType.Text.Html
-            )
+            call.respondText("Bem vindo a CoC API")
         }
 
         get("/Buildings/{parent}"){
@@ -46,8 +37,25 @@ fun Application.categories(categoriaRepository: CategoriaRepository) {
             }
         }
 
+        get("/Buildings_Items/{parent}"){
+            val parent = call.parameters["parent"]?.replace("_"," ")
+            if(parent!=null){
+                val buildingItems = categoriaRepository.getBuildingItemsByParent(parent)
+                if(buildingItems.isNotEmpty()){
+                    call.respond(buildingItems)
+                }else{
+                    call.respond("Item not found")
+                }
+            }else{
+                call.respond("No path was added")
+            }
+        }
+
         get("/Buildings"){
             call.respond(categoriaRepository.obterBuildings())
+        }
+        get("/Buildings_Items"){
+            call.respond(categoriaRepository.obterBuildingsItems())
         }
     }
 }

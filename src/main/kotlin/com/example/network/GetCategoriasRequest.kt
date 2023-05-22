@@ -8,8 +8,9 @@ import java.io.IOException
 
 class GetCategoriasRequest(private val categoriaRepository: CategoriaRepository){
     val urlHome = "https://clashofclans.fandom.com/wiki/Clash_of_Clans_Wiki"
+    val mergedList = mutableListOf<Categoria>()
 
-    fun execute(){
+    fun execute() : MutableList<Categoria>{
         try {
             val home = Jsoup.connect(urlHome).get()
             //FOR HOME PAGE OF WIKI
@@ -65,7 +66,6 @@ class GetCategoriasRequest(private val categoriaRepository: CategoriaRepository)
 //            println(listOfTitleDataSet)
 
             // Criando a lista final de Categoria com as Building correspondentes
-            val mergedList = mutableListOf<Categoria>()
 
             val minSize = minOf(categoriesTitles.size, listOfLinksDataSet.size, listOfImagesDataSet.size, listOfTitleDataSet.size)
 
@@ -102,12 +102,12 @@ class GetCategoriasRequest(private val categoriaRepository: CategoriaRepository)
                 }
             }else{
             }
-
-//            GetCategoriasItemRequest(categoriaRepository).execute()
-
+            GetCategoriasItemRequest(categoriaRepository).execute()
         } catch (e: IOException){
             val message = e.message ?: "Error desconhecido"
+            println(message)
         }
+        return mergedList
     }
 }
 
