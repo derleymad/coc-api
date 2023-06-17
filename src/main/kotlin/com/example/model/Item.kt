@@ -6,5 +6,4 @@ data class Item(
     val image : String,
 
     val status : String,
-    val life : String,
 )
